@@ -66,12 +66,9 @@ def worker(sheet, row):
         if b'success' in resp:
             progress = '0%'
             call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -t \'' + torrent['hash'] + '\' -l'
-            print(call)
             while progress != '100%':
-                proc = subprocess.Popen(call, stdout=subprocess.PIPE)
-                print('proc')
+                proc = subprocess.Popen(call, stdout=subprocess.PIPE, shell=True)
                 resp, _ = proc.communicate()
-                print('resp')
                 resp = resp.splitlines()[1]
                 progress = re.search(' *[0-9]+% +', resp).group(0).strip()
                 sheet.update_cells([gspread.models.Cell(row, 2, progress)])
