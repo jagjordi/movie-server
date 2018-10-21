@@ -39,6 +39,10 @@ def worker(sheet, row):
                 desired_movie = movies[i]
                 if not sheet.cell(row, i + 3).value: 
                     break
+            for i, m in enumerate(movies):
+                response_cells.append(gspread.models.Cell(row, 3 + i, ''))
+            sheet.update_cells(response_cells)
+            
         name = desired_movie['title_long']
 
         # find apropiate torrent
@@ -48,24 +52,30 @@ def worker(sheet, row):
             torrents = [t for t in desired_movie['torrents'] if '1080p' in t['quality']]
             if not torrents:
                 torrents = [t for t in desired_movie['torrents'] if '720p' in t['quality']]
-            if torrents:
+            if not torrents:
                 torrent = torrents[0]
-            else:
-                torrent = None
+            else torrents:
+                torrent = torrents[0]
         
         # start download
-        if torrent:
-            sheet.update_cells([gspread.models.Cell(row, 1, desired_movie['title'])])
-            call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -a \'' + torrent['url'] + '\' -w \'' + DOWNLOAD_DIR + '\''
-            proc = subprocess.Popen(call, shell=True, stdout=subprocess.PIPE)
-            resp, _ = proc.communicate()
-            print(resp)
-            if b'success' in resp:
-                pass
-
-            # TODO: monitor download
-    else:
-
+        sheet.update_cells([gspread.models.Cell(row, 1, desired_movie['title'])])
+        call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -a \'' + torrent['url'] + '\' -w \'' + DOWNLOAD_DIR + '\''
+        proc = subprocess.Popen(call, shell=True, stdout=subprocess.PIPE)
+        resp, _ = proc.communicate()
+        print(resp)
+        if b'success' in resp:
+            progress = '0%'
+            call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -t \'' + torrent['hash'] + '\' -l'
+            while progress != '100%':
+                proc = subprocess.Popen(call, stdout=subprocess.PIPE)
+                resp, _ = proc.communicate()
+                resp = resp.splitlines()[1]
+                progress = re.search(' *[0-9]+% +', resp).group(0).strip()
+                sheet.update_cells([gspread.models.Cell(row, 2, progress)])
+                time.sleep(10)
+        else:  # error adding torrent
+            sheet.update_cells([gspread.models.Cell(row, 2, 'error adding torrent')])
+    else:  # movies not found
         sheet.update_cells(response_cells)
 
 
