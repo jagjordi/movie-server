@@ -66,6 +66,7 @@ def worker(sheet, row):
         if b'success' in resp:
             progress = '0%'
             call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -t \'' + torrent['hash'] + '\' -l'
+            print(call)
             while progress != '100%':
                 proc = subprocess.Popen(call, stdout=subprocess.PIPE)
                 resp, _ = proc.communicate()
