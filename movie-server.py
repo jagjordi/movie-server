@@ -69,10 +69,12 @@ def worker(sheet, row):
             while progress != '100%':
                 proc = subprocess.Popen(call, stdout=subprocess.PIPE, shell=True)
                 resp, _ = proc.communicate()
+                print(resp)
                 resp = resp.splitlines()[1].decode("utf-8")
                 progress = re.search(' *[0-9]+% +', resp).group(0).strip()
                 sheet.update_cells([gspread.models.Cell(row, 2, progress)])
                 time.sleep(10)
+            print(desired_movie['title'] + ' ended')
         else:  # error adding torrent
             sheet.update_cells([gspread.models.Cell(row, 2, 'error adding torrent')])
     else:  # movies not found
