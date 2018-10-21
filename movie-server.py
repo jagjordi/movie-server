@@ -60,7 +60,7 @@ def worker(sheet, row):
             proc = subprocess.Popen(call, shell=True, stdout=subprocess.PIPE)
             resp, _ = proc.communicate()
             print(resp)
-            if 'success' in resp:
+            if b'success' in resp:
                 pass
 
             # TODO: monitor download
