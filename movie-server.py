@@ -1,13 +1,19 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import time
-import threading
-import yify
+from threading import Thread
 import subprocess
 import re
 import urllib3
 import json
 from requests import get
+
+
+SCOPE = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+CREDENTIALS = ServiceAccountCredentials.from_json_keyfile_name('spreadsheet-220015-58b6c82bc04b.json', SCOPE)
+TRANSMISSION_USER = 'transmission'
+TRANSMISSION_PASSWORD = 'transmission'
+DOWNLOAD_DIR = '/media/pi/Elements/Movies'
 
 
 def worker(sheet, row):
@@ -16,22 +22,50 @@ def worker(sheet, row):
     print('working on ' + str(row) + ': ' + data)
     movies = search_movies(data)
     if movies:
-        response_cells[0].value = str(len(movies)) + ' found:'
-        for i, m in enumerate(movies):
-            response_cells.append(gspread.models.Cell(row, 3 + i, m['title_long']))
-        sheet.update_cells(response_cells)
-        # wait for answer (by deleting the desired cell)
-        while all([sheet.cell(row, i).value for i in range(3, 3 + len(movies))]):
-            time.sleep(2)
-        desired_movie = None
-        for i in range(movies):
-            desired_movie = movies[i]
-            if not sheet.cell(row, i + 3).value: 
-                break
-       # TODO: deal with the torrent qualities 
-       # TODO: start download
-       # TODO: monitor download
+        if len(movies) == 1:
+            desired_movie = movies[0]
+        else:
+            # write number of movies found
+            response_cells[0].value = str(len(movies)) + ' found:'
+            for i, m in enumerate(movies):
+                response_cells.append(gspread.models.Cell(row, 3 + i, m['title_long']))
+            sheet.update_cells(response_cells)
+
+            # wait for answer (by deleting the desired cell)
+            while all([sheet.cell(row, i).value for i in range(3, 3 + len(movies))]):
+                time.sleep(2)
+            desired_movie = None
+            for i in range(len(movies)):
+                desired_movie = movies[i]
+                if not sheet.cell(row, i + 3).value: 
+                    break
+        name = desired_movie['title_long']
+
+        # find apropiate torrent
+        if len(desired_movie['torrents']) == 1:
+            torrent = desired_movie['torrents'][0]
+        else:
+            torrents = [t for t in desired_movie['torrents'] if '1080p' in t['quality']]
+            if not torrents:
+                torrents = [t for t in desired_movie['torrents'] if '720p' in t['quality']]
+            if torrents:
+                torrent = torrents[0]
+            else:
+                torrent = None
+        
+        # start download
+        if torrent:
+            sheet.update_cells([gspread.models.Cell(row, 1, desired_movie['title'])])
+            call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -a \'' + torrent['url'] + '\' -w \'' + DOWNLOAD_DIR + '\''
+            proc = subprocess.Popen(call, shell=True, stdout=subprocess.PIPE)
+            resp, _ = proc.communicate()
+            print(resp)
+            if 'success' in resp:
+                pass
+
+            # TODO: monitor download
     else:
+
         sheet.update_cells(response_cells)
 
 
@@ -51,9 +85,6 @@ def search_movies(search_str):
     
 
 if __name__ == '__main__':
-    SCOPE = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    CREDENTIALS = ServiceAccountCredentials.from_json_keyfile_name('spreadsheet-220015-58b6c82bc04b.json', SCOPE)
-
     gc = gspread.authorize(CREDENTIALS)
     wks = gc.open_by_key('1fith6AF1l9Ws_8nthr-xaCaR_4_Fv2QyR5ePA_2lwpM').sheet1
     
@@ -62,7 +93,7 @@ if __name__ == '__main__':
     while True:
         print(movie_count)
         if len(wks.col_values(1)) - 1 > movie_count:
-            threading.Thread(target=worker, args=(wks, movie_count + 2)).start()
+            Thread(target=worker, args=(wks, movie_count + 2)).start()
             movie_count += 1
             print('New entry')
             with open('moviecount', 'w') as fp:
