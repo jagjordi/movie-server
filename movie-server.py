@@ -54,7 +54,7 @@ def worker(sheet, row):
                 torrents = [t for t in desired_movie['torrents'] if '720p' in t['quality']]
             if not torrents:
                 torrent = torrents[0]
-            else torrents:
+            else:
                 torrent = torrents[0]
         
         # start download
