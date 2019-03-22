@@ -17,7 +17,12 @@ DOWNLOAD_DIR = '/media/pi/Elements/Movies'
 
 
 def worker(sheet, row):
-    data = sheet.cell(row, 1).value
+    while True:
+        try:
+            data = sheet.cell(row, 1).value
+            break
+        except:
+            sleep(10)
     response_cells = [gspread.models.Cell(row, 2, 'No movies found')]
     print('working on ' + str(row) + ': ' + data)
     movies = search_movies(data)
@@ -29,19 +34,41 @@ def worker(sheet, row):
             response_cells[0].value = str(len(movies)) + ' found:'
             for i, m in enumerate(movies):
                 response_cells.append(gspread.models.Cell(row, 3 + i, m['title_long']))
-            sheet.update_cells(response_cells)
+            while True:
+                try:
+                    sheet.update_cells(response_cells)
+                    break
+                except:
+                    sleep(10)
 
             # wait for answer (by deleting the desired cell)
-            while all([sheet.cell(row, i).value for i in range(3, 3 + len(movies))]):
-                time.sleep(2)
-            desired_movie = None
-            for i in range(len(movies)):
-                desired_movie = movies[i]
-                if not sheet.cell(row, i + 3).value: 
+            while True:
+                try
+                    while all([sheet.cell(row, i).value for i in range(3, 3 + len(movies))]):
+                        time.sleep(2)
                     break
+                except:
+                    sleep(10)
+            desired_movie = None
+            while True:
+                try:
+                    for i in range(len(movies)):
+                        desired_movie = movies[i]
+                        if not sheet.cell(row, i + 3).value: 
+                            break
+                    break
+                except:
+                    sleep(10)
+            
             for i, m in enumerate(movies):
                 response_cells.append(gspread.models.Cell(row, 3 + i, ''))
-            sheet.update_cells(response_cells)
+
+            while True:
+                try:
+                    sheet.update_cells(response_cells)
+                    break
+                except:
+                    sleep(10)
             
         name = desired_movie['title_long']
 
@@ -58,7 +85,12 @@ def worker(sheet, row):
                 torrent = torrents[0]
         
         # start download
-        sheet.update_cells([gspread.models.Cell(row, 1, desired_movie['title'])])
+        while True:
+            try:
+                sheet.update_cells([gspread.models.Cell(row, 1, desired_movie['title'])])
+                break
+            except:
+                sleep(10)
         call = 'transmission-remote -n \'' + TRANSMISSION_USER + ':' + TRANSMISSION_PASSWORD + '\' -a \'' + torrent['url'] + '\' -w \'' + DOWNLOAD_DIR + '\''
         proc = subprocess.Popen(call, shell=True, stdout=subprocess.PIPE)
         resp, _ = proc.communicate()
@@ -72,13 +104,28 @@ def worker(sheet, row):
                 print(resp)
                 resp = resp.splitlines()[1].decode("utf-8")
                 progress = re.search(' *[0-9]+% +', resp).group(0).strip()
-                sheet.update_cells([gspread.models.Cell(row, 2, progress)])
+                while True:
+                    try:
+                        sheet.update_cells([gspread.models.Cell(row, 2, progress)])
+                        break
+                    except:
+                        sleep(10)
                 time.sleep(10)
             print(desired_movie['title'] + ' ended')
         else:  # error adding torrent
-            sheet.update_cells([gspread.models.Cell(row, 2, 'error adding torrent')])
+            while True:
+                try:
+                    sheet.update_cells([gspread.models.Cell(row, 2, 'error adding torrent')])
+                    break
+                except:
+                    sleep(10)
     else:  # movies not found
-        sheet.update_cells(response_cells)
+        while True:
+            try:
+                sheet.update_cells(response_cells)
+                break
+            except:
+                sleep(10)
 
 
 def search_movies(search_str):
