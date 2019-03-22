@@ -10,7 +10,7 @@ from requests import get
 
 
 SCOPE = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-CREDENTIALS = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/.movie-server/spreadsheet-220015-58b6c82bc04b.json', SCOPE)
+CREDENTIALS = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/.movie-server/spreadsheet-220015-0475fe052e80.json', SCOPE)
 TRANSMISSION_USER = 'transmission'
 TRANSMISSION_PASSWORD = 'transmission'
 DOWNLOAD_DIR = '/media/pi/Elements/Movies'
