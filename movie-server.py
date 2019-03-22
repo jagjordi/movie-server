@@ -10,7 +10,7 @@ from requests import get
 
 
 SCOPE = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-CREDENTIALS = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/.movie-server/spreadsheet-220015-0475fe052e80.json', SCOPE)
+CREDENTIALS = ServiceAccountCredentials.from_json_keyfile_name('/home/pi/movie-server/spreadsheet-220015-0475fe052e80.json', SCOPE)
 TRANSMISSION_USER = 'transmission'
 TRANSMISSION_PASSWORD = 'transmission'
 DOWNLOAD_DIR = '/media/pi/Elements/Movies'
@@ -100,7 +100,7 @@ if __name__ == '__main__':
     gc = gspread.authorize(CREDENTIALS)
     wks = gc.open_by_key('1fith6AF1l9Ws_8nthr-xaCaR_4_Fv2QyR5ePA_2lwpM').sheet1
     
-    with open('/home/pi/.movie-server/moviecount', 'r') as fp:
+    with open('/home/pi/movie-server/moviecount', 'r') as fp:
         movie_count = int(fp.read())
     while True:
         print(movie_count)
