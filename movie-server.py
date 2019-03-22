@@ -108,7 +108,7 @@ if __name__ == '__main__':
             Thread(target=worker, args=(wks, movie_count + 2)).start()
             movie_count += 1
             print('New entry')
-            with open('/home/pi/.movie-server/moviecount', 'w') as fp:
+            with open('/home/pi/movie-server/moviecount', 'w') as fp:
                 fp.write(str(movie_count) + '\n')
 
         time.sleep(5)
